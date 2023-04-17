@@ -172,12 +172,17 @@ TEST(BPlusTreeTests, InsertTest3) {
   int64_t current_key = start_key;
   index_key.SetFromInteger(start_key);
   for (auto iterator = tree.Begin(index_key); iterator != tree.End(); ++iterator) {
+    printf("before getting location\n");
+    [[maybe_unused]] auto pair = (*iterator);
+    printf("Can use * to access\n");
     auto location = (*iterator).second;
+    printf("After getting location={second}\n");
     EXPECT_EQ(location.GetPageId(), 0);
     EXPECT_EQ(location.GetSlotNum(), current_key);
     current_key = current_key + 1;
   }
 
+  printf("##################################################################using Iterator###########################################################\n");
   EXPECT_EQ(current_key, keys.size() + 1);
 
   start_key = 3;
@@ -189,6 +194,8 @@ TEST(BPlusTreeTests, InsertTest3) {
     EXPECT_EQ(location.GetSlotNum(), current_key);
     current_key = current_key + 1;
   }
+
+  printf("##################################################################using Iterator2###########################################################\n");
 
   bpm->UnpinPage(HEADER_PAGE_ID, true);
   delete transaction;

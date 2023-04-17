@@ -12,6 +12,7 @@
 #include <sstream>
 
 #include "common/exception.h"
+#include "common/logger.h"
 #include "common/rid.h"
 #include "storage/page/b_plus_tree_leaf_page.h"
 
@@ -64,6 +65,11 @@ auto B_PLUS_TREE_LEAF_PAGE_TYPE::ValueAt(int index) const -> ValueType {
 }
 
 INDEX_TEMPLATE_ARGUMENTS
+auto B_PLUS_TREE_LEAF_PAGE_TYPE::PairAt(int index) const -> const MappingType &{
+  return array_[index];
+}
+
+INDEX_TEMPLATE_ARGUMENTS
 void B_PLUS_TREE_LEAF_PAGE_TYPE::SetKeyValueAt(int index, const KeyType &key, const ValueType &value) {
   array_[index] = {key, value};
 }
@@ -96,6 +102,18 @@ void B_PLUS_TREE_LEAF_PAGE_TYPE::MoveDataTo(B_PLUS_TREE_LEAF_PAGE_TYPE *new_page
   new_page->IncreaseSize(count);
   SetSize(size - count);
 }
+
+INDEX_TEMPLATE_ARGUMENTS
+auto B_PLUS_TREE_LEAF_PAGE_TYPE::LowerBound(const KeyType &key, const KeyComparator &comp) const -> int {
+  int index = 0;
+  int size = GetSize();
+  while(index < size && comp(array_[index].first, key) < 0) {
+    index++;
+  }
+  LOG_DEBUG("index = %d, key = %ld", index, array_[index].first.ToString());
+  return index;
+}
+
 template class BPlusTreeLeafPage<GenericKey<4>, RID, GenericComparator<4>>;
 template class BPlusTreeLeafPage<GenericKey<8>, RID, GenericComparator<8>>;
 template class BPlusTreeLeafPage<GenericKey<16>, RID, GenericComparator<16>>;

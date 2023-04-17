@@ -138,29 +138,63 @@ auto BPLUSTREE_TYPE::Insert(const KeyType &key, const ValueType &value, Transact
     page_id_t parent_page_id = old_tree_page->GetParentPageId();
     Page *parent_page = buffer_pool_manager_->FetchPage(parent_page_id);
     auto parent_internal_page = reinterpret_cast<InternalPage *>(parent_page->GetData());
-    //directy Insert ? 
-    parent_internal_page->Insert(split_key, new_tree_page->GetPageId(), comparator_);
-    new_tree_page->SetParentPageId(parent_page_id);
-    if(parent_internal_page->GetSize() <= internal_max_size_) {
+    if(parent_internal_page->GetSize() < internal_max_size_) {
+      parent_internal_page->Insert(split_key, new_tree_page->GetPageId(), comparator_);
+      new_tree_page->SetParentPageId(parent_page_id);
       buffer_pool_manager_->UnpinPage(parent_page_id, true);
       break;
     }
-
     page_id_t new_page_id;
     Page *new_page = buffer_pool_manager_->NewPage(&new_page_id);
     auto new_internal_page = reinterpret_cast<InternalPage *>(new_page->GetData());
     new_internal_page->Init(new_page_id, parent_internal_page->GetParentPageId(), internal_max_size_);
-    int new_page_size = (internal_max_size_ + 1) / 2;
-    size_t start_index = parent_internal_page->GetSize() - new_page_size;
-    for(int i = start_index, j = 0; i < parent_internal_page->GetSize(); i++, j++) {
-      new_internal_page->SetKeyValueAt(j, parent_internal_page->KeyAt(i), parent_internal_page->ValueAt(i));
+
+    int ins_at = 1;
+    while(ins_at < parent_internal_page->GetSize() && comparator_(parent_internal_page->KeyAt(ins_at), split_key) < 0) {
+      ins_at++;
+    }
+    int last = (internal_max_size_ - 1) / 2;
+    if(ins_at <= last ) {
+      auto key = parent_internal_page->KeyAt(last);
+      auto value = parent_internal_page->ValueAt(last);
+      for(int i = ins_at; i < last; i++) {
+	parent_internal_page->SetKeyValueAt(i+1, parent_internal_page->KeyAt(i), parent_internal_page->ValueAt(i));
+    }
+      parent_internal_page->SetKeyValueAt(ins_at, split_key, new_tree_page->GetPageId());
+      new_internal_page->SetKeyValueAt(0, key, value);
+      for(int i = last+1, j = 1; i < internal_max_size_; i++, j++) {
+	new_internal_page->SetKeyValueAt(j, parent_internal_page->KeyAt(i), parent_internal_page->ValueAt(i));
+      }
+    } else {
+      int parent_index = last + 1;
+      int cur = 0;
+      while(parent_index < internal_max_size_) {
+	if(parent_index == ins_at) {
+	  new_internal_page->SetKeyValueAt(cur, split_key, new_tree_page->GetPageId());
+	  cur++;
+	}
+	new_internal_page->SetKeyValueAt(cur, parent_internal_page->KeyAt(parent_index), parent_internal_page->ValueAt(parent_index));
+	  parent_index++;
+	  cur++;
+      }
+      if(cur < internal_max_size_ / 2 + 1) {
+	new_internal_page->SetKeyValueAt(cur, split_key, new_tree_page->GetPageId());
+      }
+    }
+    parent_internal_page->SetSize((internal_max_size_ + 1) / 2);
+    for(int i = 0; i < parent_internal_page->GetSize(); i++) {
       Page *page = buffer_pool_manager_->FetchPage(parent_internal_page->ValueAt(i));
       auto tree_page = reinterpret_cast<BPlusTreePage *>(page->GetData());
-      tree_page->SetParentPageId(new_page_id);
+      tree_page->SetParentPageId(parent_internal_page->GetPageId());
       buffer_pool_manager_->UnpinPage(tree_page->GetPageId(), true);
     }
-    parent_internal_page->SetSize(internal_max_size_ - new_page_size + 1);
-    new_internal_page->SetSize(new_page_size);
+    new_internal_page->SetSize(internal_max_size_ / 2 + 1);
+    for(int i = 0; i < new_internal_page->GetSize(); i++) {
+      Page *page = buffer_pool_manager_->FetchPage(new_internal_page->ValueAt(i));
+      auto tree_page = reinterpret_cast<BPlusTreePage *>(page->GetData());
+      tree_page->SetParentPageId(new_internal_page->GetPageId());
+      buffer_pool_manager_->UnpinPage(tree_page->GetPageId(), true);
+    }
 
     buffer_pool_manager_->UnpinPage(old_tree_page->GetPageId(), true);
     buffer_pool_manager_->UnpinPage(new_tree_page->GetPageId(), true);
@@ -196,7 +230,22 @@ void BPLUSTREE_TYPE::Remove(const KeyType &key, Transaction *transaction) {}
  * @return : index iterator
  */
 INDEX_TEMPLATE_ARGUMENTS
-auto BPLUSTREE_TYPE::Begin() -> INDEXITERATOR_TYPE { return INDEXITERATOR_TYPE(); }
+auto BPLUSTREE_TYPE::Begin() -> INDEXITERATOR_TYPE {
+  page_id_t next_page_id = root_page_id_;
+  while(true) {
+    Page *page = buffer_pool_manager_->FetchPage(next_page_id);
+    auto tree_page = reinterpret_cast<BPlusTreePage *>(page->GetData());
+    if(tree_page->IsLeafPage()) {
+      return INDEXITERATOR_TYPE(tree_page->GetPageId(), 0, buffer_pool_manager_);
+    }
+    auto internal_page = static_cast<InternalPage *>(tree_page);
+    if(internal_page == nullptr) {
+      throw std::bad_cast();
+    }
+    next_page_id = internal_page->ValueAt(0);
+    buffer_pool_manager_->UnpinPage(internal_page->GetPageId(), false);
+  }
+}
 
 /*
  * Input parameter is low key, find the leaf page that contains the input key
@@ -204,7 +253,11 @@ auto BPLUSTREE_TYPE::Begin() -> INDEXITERATOR_TYPE { return INDEXITERATOR_TYPE()
  * @return : index iterator
  */
 INDEX_TEMPLATE_ARGUMENTS
-auto BPLUSTREE_TYPE::Begin(const KeyType &key) -> INDEXITERATOR_TYPE { return INDEXITERATOR_TYPE(); }
+auto BPLUSTREE_TYPE::Begin(const KeyType &key) -> INDEXITERATOR_TYPE {
+  Page *page = GetLeafPage(key);
+  auto leaf_page = reinterpret_cast<LeafPage *>(page->GetData());
+  return INDEXITERATOR_TYPE(page->GetPageId(), leaf_page->LowerBound(key, comparator_), buffer_pool_manager_);
+}
 
 /*
  * Input parameter is void, construct an index iterator representing the end
@@ -212,7 +265,9 @@ auto BPLUSTREE_TYPE::Begin(const KeyType &key) -> INDEXITERATOR_TYPE { return IN
  * @return : index iterator
  */
 INDEX_TEMPLATE_ARGUMENTS
-auto BPLUSTREE_TYPE::End() -> INDEXITERATOR_TYPE { return INDEXITERATOR_TYPE(); }
+auto BPLUSTREE_TYPE::End() -> INDEXITERATOR_TYPE {
+  return INDEXITERATOR_TYPE(INVALID_PAGE_ID, 0, buffer_pool_manager_);
+}
 
 /**
  * @return Page id of the root of this tree
