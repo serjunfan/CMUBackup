@@ -40,14 +40,10 @@ void B_PLUS_TREE_LEAF_PAGE_TYPE::Init(page_id_t page_id, page_id_t parent_id, in
  * Helper methods to set/get next page id
  */
 INDEX_TEMPLATE_ARGUMENTS
-auto B_PLUS_TREE_LEAF_PAGE_TYPE::GetNextPageId() const -> page_id_t {
-  return next_page_id_;
-}
+auto B_PLUS_TREE_LEAF_PAGE_TYPE::GetNextPageId() const -> page_id_t { return next_page_id_; }
 
 INDEX_TEMPLATE_ARGUMENTS
-void B_PLUS_TREE_LEAF_PAGE_TYPE::SetNextPageId(page_id_t next_page_id) {
-  next_page_id_ = next_page_id;
-}
+void B_PLUS_TREE_LEAF_PAGE_TYPE::SetNextPageId(page_id_t next_page_id) { next_page_id_ = next_page_id; }
 
 /*
  * Helper method to find and return the key associated with input "index"(a.k.a
@@ -60,14 +56,10 @@ auto B_PLUS_TREE_LEAF_PAGE_TYPE::KeyAt(int index) const -> KeyType {
 }
 
 INDEX_TEMPLATE_ARGUMENTS
-auto B_PLUS_TREE_LEAF_PAGE_TYPE::ValueAt(int index) const -> ValueType {
-  return array_[index].second;
-}
+auto B_PLUS_TREE_LEAF_PAGE_TYPE::ValueAt(int index) const -> ValueType { return array_[index].second; }
 
 INDEX_TEMPLATE_ARGUMENTS
-auto B_PLUS_TREE_LEAF_PAGE_TYPE::PairAt(int index) const -> const MappingType &{
-  return array_[index];
-}
+auto B_PLUS_TREE_LEAF_PAGE_TYPE::PairAt(int index) const -> const MappingType & { return array_[index]; }
 
 INDEX_TEMPLATE_ARGUMENTS
 void B_PLUS_TREE_LEAF_PAGE_TYPE::SetKeyValueAt(int index, const KeyType &key, const ValueType &value) {
@@ -77,16 +69,16 @@ void B_PLUS_TREE_LEAF_PAGE_TYPE::SetKeyValueAt(int index, const KeyType &key, co
 INDEX_TEMPLATE_ARGUMENTS
 void B_PLUS_TREE_LEAF_PAGE_TYPE::Insert(const KeyType &key, const ValueType &value, const KeyComparator &comp) {
   int size = GetSize();
-  if(size >= GetMaxSize()) {
+  if (size >= GetMaxSize()) {
     throw std::logic_error("B+ tree leaf page already reach max size");
   }
   int ins_at = 0;
-  while(ins_at < size && comp(array_[ins_at].first, key) < 0) {
+  while (ins_at < size && comp(array_[ins_at].first, key) < 0) {
     ins_at++;
   }
 
-  for(int i = size; i > ins_at; i--) {
-    array_[i] = array_[i-1];
+  for (int i = size; i > ins_at; i--) {
+    array_[i] = array_[i - 1];
   }
   IncreaseSize(1);
   SetKeyValueAt(ins_at, key, value);
@@ -96,7 +88,7 @@ INDEX_TEMPLATE_ARGUMENTS
 void B_PLUS_TREE_LEAF_PAGE_TYPE::MoveDataTo(B_PLUS_TREE_LEAF_PAGE_TYPE *new_page, int count) {
   int size = GetSize();
   int start_index = size - count;
-  for(int i = start_index, j = 0; i < size; i++, j++) {
+  for (int i = start_index, j = 0; i < size; i++, j++) {
     new_page->SetKeyValueAt(j, array_[i].first, array_[i].second);
   }
   new_page->IncreaseSize(count);
@@ -107,11 +99,24 @@ INDEX_TEMPLATE_ARGUMENTS
 auto B_PLUS_TREE_LEAF_PAGE_TYPE::LowerBound(const KeyType &key, const KeyComparator &comp) const -> int {
   int index = 0;
   int size = GetSize();
-  while(index < size && comp(array_[index].first, key) < 0) {
+  while (index < size && comp(array_[index].first, key) < 0) {
     index++;
   }
-  LOG_DEBUG("index = %d, key = %ld", index, array_[index].first.ToString());
   return index;
+}
+
+INDEX_TEMPLATE_ARGUMENTS
+void B_PLUS_TREE_LEAF_PAGE_TYPE::Remove(const KeyType &key, const KeyComparator &comp) {
+  int index = 0;
+  int size = GetSize();
+  while (comp(array_[index].first, key) != 0) {
+    index++;
+  }
+  assert(index < size);
+  for (int i = index + 1, j = index; i < size; i++, j++) {
+    array_[j] = array_[i];
+  }
+  SetSize(size - 1);
 }
 
 template class BPlusTreeLeafPage<GenericKey<4>, RID, GenericComparator<4>>;
