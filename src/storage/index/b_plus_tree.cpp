@@ -230,20 +230,21 @@ void BPLUSTREE_TYPE::Remove(const KeyType &key, Transaction *transaction) {
   leaf_page->Remove(key, comparator_);
 
   if (leaf_page->IsRootPage()) {
-    // buffer_pool_manager_->UnpinPage(page->GetPageId(), true);
+     buffer_pool_manager_->UnpinPage(page->GetPageId(), true);
     return;
   }
 
   if (leaf_page->GetSize() < leaf_page->GetMinSize()) {
     HandleUnderflow(leaf_page, transaction);
   }
+  buffer_pool_manager_->UnpinPage(page->GetPageId(), true);
 }
 
 INDEX_TEMPLATE_ARGUMENTS
 void BPLUSTREE_TYPE::HandleUnderflow(BPlusTreePage *page, Transaction *transaction) {
   if (page->IsRootPage()) {
     if (page->IsLeafPage() || page->GetSize() > 1) {
-      // buffer_pool_manager_->UnpinPage(page->GetPageId(), false);
+       //buffer_pool_manager_->UnpinPage(page->GetPageId(), false);
       return;
     }
 
@@ -276,6 +277,8 @@ void BPLUSTREE_TYPE::HandleUnderflow(BPlusTreePage *page, Transaction *transacti
       TryBorrow(page, right_sibling_page, parent_page, false)) {
     UnpinSiblings(left_sibling_id, right_sibling_id);
     buffer_pool_manager_->UnpinPage(parent_page->GetPageId(), true);
+    //current page will be unpined at the previous call to handlerUnderflow
+    //buffer_pool_manager_->UnpinPage(page->GetPageId(), true);
     return;
   }
   BPlusTreePage *left_page;
@@ -355,6 +358,7 @@ auto BPLUSTREE_TYPE::TryBorrow(BPlusTreePage *page, BPlusTreePage *sibling_page,
     child_page->SetParentPageId(internal_page->GetPageId());
     buffer_pool_manager_->UnpinPage(page->GetPageId(), true);
   }
+  parent_page->SetKeyAt(parent_update_at, update_key);
   return true;
 }
 
