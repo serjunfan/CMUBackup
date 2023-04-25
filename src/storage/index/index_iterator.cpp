@@ -22,7 +22,12 @@ INDEXITERATOR_TYPE::IndexIterator(page_id_t page_id, page_id_t index_in_leaf, Bu
 }
 
 INDEX_TEMPLATE_ARGUMENTS
-INDEXITERATOR_TYPE::~IndexIterator() = default;  // NOLINT
+INDEXITERATOR_TYPE::~IndexIterator() {
+  if(page_ != nullptr) {
+    page_->RUnlatch();
+    buffer_pool_manager_->UnpinPage(page_id_, false);
+  }
+}
 
 INDEX_TEMPLATE_ARGUMENTS
 auto INDEXITERATOR_TYPE::IsEnd() -> bool { return page_id_ == INVALID_PAGE_ID; }
