@@ -203,7 +203,7 @@ TEST(BPlusTreeConcurrentTest, InsertTest2) {
   remove("test.log");
 }
 
-TEST(BPlusTreeConcurrentTest, DISABLED_DeleteTest1) {
+TEST(BPlusTreeConcurrentTest, DeleteTest1) {
   // create KeyComparator and index schema
   auto key_schema = ParseCreateStatement("a bigint");
   GenericComparator<8> comparator(key_schema.get());
@@ -219,16 +219,21 @@ TEST(BPlusTreeConcurrentTest, DISABLED_DeleteTest1) {
   (void)header_page;
   // sequential insert
   std::vector<int64_t> keys = {1, 2, 3, 4, 5};
+  // LOG_DEBUG("Befor inserthelper\n");
   InsertHelper(&tree, keys);
 
   std::vector<int64_t> remove_keys = {1, 5, 3, 4};
+  // LOG_DEBUG("Before launchparallel\n");
   LaunchParallelTest(2, DeleteHelper, &tree, remove_keys);
+  // LOG_DEBUG("After launch\n");
 
   int64_t start_key = 2;
   int64_t current_key = start_key;
   int64_t size = 0;
   index_key.SetFromInteger(start_key);
+  // LOG_DEBUG("Before for loop\n");
   for (auto iterator = tree.Begin(index_key); iterator != tree.End(); ++iterator) {
+    // LOG_DEBUG("SIze = %ld\n", size);
     auto location = (*iterator).second;
     EXPECT_EQ(location.GetPageId(), 0);
     EXPECT_EQ(location.GetSlotNum(), current_key);
@@ -245,7 +250,7 @@ TEST(BPlusTreeConcurrentTest, DISABLED_DeleteTest1) {
   remove("test.log");
 }
 
-TEST(BPlusTreeConcurrentTest, DISABLED_DeleteTest2) {
+TEST(BPlusTreeConcurrentTest, DeleteTest2) {
   // create KeyComparator and index schema
   auto key_schema = ParseCreateStatement("a bigint");
   GenericComparator<8> comparator(key_schema.get());
@@ -288,7 +293,7 @@ TEST(BPlusTreeConcurrentTest, DISABLED_DeleteTest2) {
   remove("test.log");
 }
 
-TEST(BPlusTreeConcurrentTest, DISABLED_MixTest) {
+TEST(BPlusTreeConcurrentTest, MixTest) {
   // create KeyComparator and index schema
   auto key_schema = ParseCreateStatement("a bigint");
   GenericComparator<8> comparator(key_schema.get());

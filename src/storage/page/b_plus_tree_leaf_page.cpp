@@ -77,10 +77,10 @@ void B_PLUS_TREE_LEAF_PAGE_TYPE::Insert(const KeyType &key, const ValueType &val
     ins_at++;
   }
 
+  IncreaseSize(1);
   for (int i = size; i > ins_at; i--) {
     array_[i] = array_[i - 1];
   }
-  IncreaseSize(1);
   SetKeyValueAt(ins_at, key, value);
 }
 
@@ -109,12 +109,16 @@ INDEX_TEMPLATE_ARGUMENTS
 void B_PLUS_TREE_LEAF_PAGE_TYPE::Remove(const KeyType &key, const KeyComparator &comp) {
   int index = 0;
   int size = GetSize();
-  while (comp(array_[index].first, key) != 0) {
+  while (index < size && comp(array_[index].first, key) != 0) {
     index++;
   }
-  assert(index < size);
-  for (int i = index + 1, j = index; i < size; i++, j++) {
-    array_[j] = array_[i];
+  if (index >= size) {
+    LOG_DEBUG("can't find %ld in leafpage %d\n", key.ToString(), GetPageId());
+    return;
+  }
+  // assert(index < size);
+  for (int i = index + 1; i < size; i++) {
+    array_[i-1] = array_[i];
   }
   SetSize(size - 1);
 }

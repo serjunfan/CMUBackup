@@ -23,7 +23,7 @@ namespace bustub {
 
 #define BPLUSTREE_TYPE BPlusTree<KeyType, ValueType, KeyComparator>
 
-enum class Operation {Read, Insert, Remove };
+enum class Operation { Read, Insert, Remove };
 /**
  * Main class providing the API for the Interactive B+ Tree.
  *
@@ -58,13 +58,15 @@ class BPlusTree {
   auto TryBorrow(BPlusTreePage *page, BPlusTreePage *sibling_page, InternalPage *parent_page, bool sibling_at_left)
       -> bool;
   void UnpinSiblings(page_id_t left, page_id_t right);
-  void MergePage(BPlusTreePage *left_page, BPlusTreePage *right_page, InternalPage *parent_page);
+  void MergePage(BPlusTreePage *left_page, BPlusTreePage *right_page, InternalPage *parent_page,
+                 Transaction *transaction);
   void SetPageParentId(page_id_t child_page_id, page_id_t parent_page_id);
   // return the value associated with a given key
   auto GetValue(const KeyType &key, std::vector<ValueType> *result, Transaction *transaction = nullptr) -> bool;
 
   // return the target leaf page
-  auto GetLeafPage(const KeyType &key, Operation op, Transaction *transaction = nullptr, Page *prev_page = nullptr) -> Page *;
+  auto GetLeafPage(const KeyType &key, Operation op, Transaction *transaction = nullptr, Page *prev_page = nullptr)
+      -> Page *;
   // return the page id of the root node
   auto GetRootPageId() -> page_id_t;
 
@@ -95,6 +97,7 @@ class BPlusTree {
 
   auto IsPageSafe(BPlusTreePage *tree_page, Operation op) -> bool;
   void ReleaseWLatches(Transaction *transaction);
+  void DeletePages(Transaction *transaction);
   // member variable
   std::string index_name_;
   page_id_t root_page_id_;

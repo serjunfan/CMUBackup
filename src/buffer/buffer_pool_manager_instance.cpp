@@ -13,6 +13,7 @@
 #include "buffer/buffer_pool_manager_instance.h"
 
 #include "common/exception.h"
+#include "common/logger.h"
 #include "common/macros.h"
 
 namespace bustub {
@@ -41,13 +42,15 @@ auto BufferPoolManagerInstance::NewPgImp(page_id_t *page_id) -> Page * {
   std::scoped_lock<std::mutex> lock(latch_);
   frame_id_t fid;
   if (!GetAvailableFrame(&fid)) {
-    // std::cout << "In Newpg, no more availble frame\n";
+     LOG_DEBUG("in bpm->newpage, no more available frame\n");
+    //  std::cout << "In Newpg, no more availble frame\n";
     return nullptr;
   }
   *page_id = AllocatePage();
   page_table_->Insert(*page_id, fid);
   pages_[fid].pin_count_ = 1;
   pages_[fid].page_id_ = *page_id;
+  pages_[fid].is_dirty_ = false;
   // be careful, order matters here.
   replacer_->RecordAccess(fid);
   replacer_->SetEvictable(fid, false);
@@ -57,8 +60,13 @@ auto BufferPoolManagerInstance::NewPgImp(page_id_t *page_id) -> Page * {
 auto BufferPoolManagerInstance::FetchPgImp(page_id_t page_id) -> Page * {
   std::scoped_lock<std::mutex> lock(latch_);
   frame_id_t fid;
+  if (page_id < 0) {
+     LOG_DEBUG("request a page with page_id < 0");
+    return nullptr;
+  }
   if (!page_table_->Find(page_id, fid)) {
     if (!GetAvailableFrame(&fid)) {
+       LOG_DEBUG("can't find in pagetable and no available frame\n");
       return nullptr;
     }
     page_table_->Insert(page_id, fid);
@@ -66,6 +74,7 @@ auto BufferPoolManagerInstance::FetchPgImp(page_id_t page_id) -> Page * {
     disk_manager_->ReadPage(page_id, pages_[fid].data_);
   }
   pages_[fid].pin_count_++;
+   LOG_DEBUG("page_id %d pin_count = %d\n", page_id, pages_[fid].pin_count_);
   replacer_->RecordAccess(fid);
   replacer_->SetEvictable(fid, false);
   return &pages_[fid];
@@ -82,6 +91,7 @@ auto BufferPoolManagerInstance::UnpinPgImp(page_id_t page_id, bool is_dirty) -> 
   }
   pages_[fid].is_dirty_ |= is_dirty;
   if (--pages_[fid].pin_count_ <= 0) {
+     LOG_DEBUG("page_id = %d has been free\n", page_id);
     replacer_->SetEvictable(fid, true);
   }
   return true;

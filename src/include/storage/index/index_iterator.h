@@ -26,6 +26,8 @@ class IndexIterator {
   IndexIterator();
   IndexIterator(page_id_t page_id, page_id_t index_in_leaf, BufferPoolManager *bpm);
   ~IndexIterator();  // NOLINT
+  auto operator=(const IndexIterator &other) -> IndexIterator & = delete;
+  auto operator=(IndexIterator &&other) noexcept -> IndexIterator &;
 
   auto IsEnd() -> bool;
 

@@ -18,15 +18,27 @@ INDEX_TEMPLATE_ARGUMENTS
 INDEXITERATOR_TYPE::IndexIterator(page_id_t page_id, page_id_t index_in_leaf, BufferPoolManager *bpm)
     : page_id_(page_id), index_in_leaf_(index_in_leaf), buffer_pool_manager_(bpm) {
   page_ = buffer_pool_manager_->FetchPage(page_id_);
+  // in Begin(), already fetch the page, so at this line pin_count = 2
+  buffer_pool_manager_->UnpinPage(page_id_, false);
   leaf_page_ = reinterpret_cast<B_PLUS_TREE_LEAF_PAGE_TYPE *>(page_->GetData());
 }
 
 INDEX_TEMPLATE_ARGUMENTS
 INDEXITERATOR_TYPE::~IndexIterator() {
-  if(page_ != nullptr) {
+  if (page_ != nullptr) {
     page_->RUnlatch();
     buffer_pool_manager_->UnpinPage(page_id_, false);
   }
+}
+
+INDEX_TEMPLATE_ARGUMENTS
+auto INDEXITERATOR_TYPE::operator=(IndexIterator &&other) noexcept -> IndexIterator & {
+  std::swap(page_id_, other.page_id_);
+  std::swap(page_, other.page_);
+  std::swap(leaf_page_, other.leaf_page_);
+  std::swap(index_in_leaf_, other.index_in_leaf_);
+  std::swap(buffer_pool_manager_, other.buffer_pool_manager_);
+  return *this;
 }
 
 INDEX_TEMPLATE_ARGUMENTS

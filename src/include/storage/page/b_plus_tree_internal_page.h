@@ -46,6 +46,7 @@ class BPlusTreeInternalPage : public BPlusTreePage {
   void RemoveAt(int index);
   void Insert(const KeyType &key, const ValueType &value, const KeyComparator &comp);
   auto FindValue(page_id_t page_id) const -> int;
+  //virtual auto GetMinSize() const -> int override;
 
  private:
   // Flexible array member for page data.
