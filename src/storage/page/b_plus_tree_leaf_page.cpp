@@ -113,12 +113,12 @@ void B_PLUS_TREE_LEAF_PAGE_TYPE::Remove(const KeyType &key, const KeyComparator 
     index++;
   }
   if (index >= size) {
-    LOG_DEBUG("can't find %ld in leafpage %d\n", key.ToString(), GetPageId());
+    // LOG_DEBUG("can't find %ld in leafpage %d\n", key.ToString(), GetPageId());
     return;
   }
   // assert(index < size);
   for (int i = index + 1; i < size; i++) {
-    array_[i-1] = array_[i];
+    array_[i - 1] = array_[i];
   }
   SetSize(size - 1);
 }
