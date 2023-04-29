@@ -83,6 +83,9 @@ auto BufferPoolManagerInstance::FetchPgImp(page_id_t page_id) -> Page * {
 auto BufferPoolManagerInstance::UnpinPgImp(page_id_t page_id, bool is_dirty) -> bool {
   std::scoped_lock<std::mutex> lock(latch_);
   frame_id_t fid;
+  if (page_id < 0) {
+    return false;
+  }
   if (!page_table_->Find(page_id, fid)) {
     return false;
   }
@@ -118,9 +121,11 @@ auto BufferPoolManagerInstance::DeletePgImp(page_id_t page_id) -> bool {
   std::scoped_lock<std::mutex> lock(latch_);
   frame_id_t fid;
   if (!page_table_->Find(page_id, fid)) {
+    // LOG_DEBUG("pageid %d not presented in table\n", page_id);
     return true;
   }
   if (pages_[fid].pin_count_ >= 1) {
+    // LOG_DEBUG("Can't delete PageId %d because still in use\n", page_id);
     return false;
   }
   pages_[fid].ResetMemory();
@@ -131,6 +136,7 @@ auto BufferPoolManagerInstance::DeletePgImp(page_id_t page_id) -> bool {
   replacer_->Remove(fid);
   free_list_.push_back(fid);
   DeallocatePage(page_id);
+  // LOG_DEBUG("page %d deletion success\n", page_id);
   return true;
 }
 

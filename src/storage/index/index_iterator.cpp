@@ -56,6 +56,7 @@ auto INDEXITERATOR_TYPE::operator++() -> INDEXITERATOR_TYPE & {
     index_in_leaf_++;
   } else {
     index_in_leaf_ = 0;
+    auto prev_page = page_;
     page_id_t prev_page_id = page_id_;
     page_id_ = leaf_page_->GetNextPageId();
     if (page_id_ == INVALID_PAGE_ID) {
@@ -63,8 +64,10 @@ auto INDEXITERATOR_TYPE::operator++() -> INDEXITERATOR_TYPE & {
       leaf_page_ = nullptr;
     } else {
       page_ = buffer_pool_manager_->FetchPage(page_id_);
+      page_->RLatch();
       leaf_page_ = reinterpret_cast<B_PLUS_TREE_LEAF_PAGE_TYPE *>(page_->GetData());
     }
+    prev_page->RUnlatch();
     buffer_pool_manager_->UnpinPage(prev_page_id, false);
   }
   return *this;

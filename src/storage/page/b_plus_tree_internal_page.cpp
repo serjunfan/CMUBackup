@@ -56,8 +56,8 @@ void B_PLUS_TREE_INTERNAL_PAGE_TYPE::SetValueAt(int index, const ValueType &valu
 INDEX_TEMPLATE_ARGUMENTS
 void B_PLUS_TREE_INTERNAL_PAGE_TYPE::RemoveAt(int index) {
   int size = GetSize();
-  if (index < 0 || index >= size) {
-    return;
+  if (index <= 0 || index >= size) {
+    throw std::invalid_argument("internal page remove key index should be >= 1  && < GetSize()");
   }
   for (int i = index, j = index + 1; j < size; i++, j++) {
     array_[i] = array_[j];
