@@ -65,10 +65,11 @@ class BPlusTree {
   auto GetValue(const KeyType &key, std::vector<ValueType> *result, Transaction *transaction = nullptr) -> bool;
 
   // return the target leaf page
-  auto GetLeafPage(const KeyType &key, Operation op, Transaction *transaction = nullptr, Page *prev_page = nullptr)
-      -> Page *;
+  auto GetLeafPage(const KeyType &key, Operation op, Transaction *transaction = nullptr, bool first_pass = true,
+                   Page *prev_page = nullptr) -> Page *;
   // return the page id of the root node
   auto GetRootPageId() -> page_id_t;
+  void FreePrevPage(Page *prev_page);
 
   // index iterator
   auto Begin() -> INDEXITERATOR_TYPE;
