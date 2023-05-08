@@ -86,6 +86,7 @@ auto BPLUSTREE_TYPE::GetLeafPage(const KeyType &key, Operation op, Transaction *
     if (tree_page->IsLeafPage()) {
       if (first_pass && !IsPageSafe(tree_page, op)) {
         ReleaseWLatches(transaction);
+	//return nullptr;
         return GetLeafPage(key, op, transaction, false);
       }
       return page;
@@ -140,6 +141,11 @@ auto BPLUSTREE_TYPE::Insert(const KeyType &key, const ValueType &value, Transact
   }
 
   Page *page = GetLeafPage(key, Operation::Insert, transaction);
+  /*
+  if(page == nullptr) {
+    page = GetLeafPage(key, Operation::Insert, transaction, false);
+  }
+  */
   auto leaf_page = reinterpret_cast<LeafPage *>(page->GetData());
   // check for dup
   for (int i = 0; i < leaf_page->GetSize(); i++) {
@@ -313,6 +319,11 @@ void BPLUSTREE_TYPE::Remove(const KeyType &key, Transaction *transaction) {
   }
 
   Page *page = GetLeafPage(key, Operation::Remove, transaction);
+  /*
+  if(page == nullptr) {
+    page = GetLeafPage(key, Operation::Remove, transaction, false);
+  }
+  */
   auto leaf_page = reinterpret_cast<LeafPage *>(page->GetData());
 
   leaf_page->Remove(key, comparator_);

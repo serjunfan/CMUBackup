@@ -14,7 +14,7 @@
  */
 #pragma once
 #include "storage/page/b_plus_tree_leaf_page.h"
-
+#include "common/logger.h"
 namespace bustub {
 
 #define INDEXITERATOR_TYPE IndexIterator<KeyType, ValueType, KeyComparator>
@@ -25,9 +25,10 @@ class IndexIterator {
   // you may define your own constructor based on your member variables
   IndexIterator();
   IndexIterator(page_id_t page_id, page_id_t index_in_leaf, BufferPoolManager *bpm);
+  IndexIterator(IndexIterator &&other);
   ~IndexIterator();  // NOLINT
-  auto operator=(const IndexIterator &other) -> IndexIterator & = delete;
-  auto operator=(IndexIterator &&other) noexcept -> IndexIterator &;
+  auto operator=(IndexIterator &other) -> IndexIterator & = delete;
+  //auto operator=(IndexIterator &&other) noexcept -> IndexIterator &;
 
   auto IsEnd() -> bool;
 
