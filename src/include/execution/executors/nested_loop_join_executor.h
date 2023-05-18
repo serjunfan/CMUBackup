@@ -14,7 +14,7 @@
 
 #include <memory>
 #include <utility>
-
+#include <vector>
 #include "execution/executor_context.h"
 #include "execution/executors/abstract_executor.h"
 #include "execution/plans/nested_loop_join_plan.h"
@@ -67,7 +67,7 @@ class NestedLoopJoinExecutor : public AbstractExecutor {
   Schema right_schema_;
   bool is_match_{true};
   bool is_inner_{false};
-  bool successful_{false};
+  // bool successful_{false};
 };
 
 }  // namespace bustub

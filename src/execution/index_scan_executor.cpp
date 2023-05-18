@@ -13,24 +13,24 @@
 
 namespace bustub {
 IndexScanExecutor::IndexScanExecutor(ExecutorContext *exec_ctx, const IndexScanPlanNode *plan)
-    : AbstractExecutor(exec_ctx), plan_(plan){}
+    : AbstractExecutor(exec_ctx), plan_(plan) {}
 
 void IndexScanExecutor::Init() {
-  //std::cout << "IndexScanInit" << std::endl;
+  // std::cout << "IndexScanInit" << std::endl;
   auto index_info = exec_ctx_->GetCatalog()->GetIndex(plan_->GetIndexOid());
   index_ = dynamic_cast<BPlusTreeIndexForOneIntegerColumn *>(index_info->index_.get());
-  iterator_ = std::make_unique<BPlusTreeIndexIteratorForOneIntegerColumn>(std::move(index_->GetBeginIterator()));
-  //std::cout << "After make unique" << std::endl;
+  iterator_ = std::make_unique<BPlusTreeIndexIteratorForOneIntegerColumn>(index_->GetBeginIterator());
+  // std::cout << "After make unique" << std::endl;
   table_heap_ = exec_ctx_->GetCatalog()->GetTable(index_info->table_name_)->table_.get();
 }
 
-auto IndexScanExecutor::Next(Tuple *tuple, RID *rid) -> bool { 
-  if(*iterator_ != index_->GetEndIterator()) {
-  *rid = (**iterator_).second;
-  if(table_heap_->GetTuple(*rid, tuple, exec_ctx_->GetTransaction())) {
-    iterator_->operator++();
-    return true;
-  }
+auto IndexScanExecutor::Next(Tuple *tuple, RID *rid) -> bool {
+  if (*iterator_ != index_->GetEndIterator()) {
+    *rid = (**iterator_).second;
+    if (table_heap_->GetTuple(*rid, tuple, exec_ctx_->GetTransaction())) {
+      iterator_->operator++();
+      return true;
+    }
   }
   return false;
 }

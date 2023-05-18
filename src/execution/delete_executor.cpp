@@ -27,35 +27,41 @@ void DeleteExecutor::Init() {
   iterator_ = std::make_unique<TableIterator>(table_heap_->Begin(exec_ctx_->GetTransaction()));
   child_executor_->Init();
 
+  /*
   try {
-    if (!exec_ctx_->GetLockManager()->LockTable(exec_ctx_->GetTransaction(), LockManager::LockMode::INTENTION_EXCLUSIVE, table_info_->oid_)) {
+    if (!exec_ctx_->GetLockManager()->LockTable(exec_ctx_->GetTransaction(), LockManager::LockMode::INTENTION_EXCLUSIVE,
+                                                table_info_->oid_)) {
       throw ExecutionException("lock table intention exclusive failed");
     }
   } catch (TransactionAbortException &e) {
     throw ExecutionException("delete TansactionAbort");
   }
+  */
 }
 
 auto DeleteExecutor::Next([[maybe_unused]] Tuple *tuple, RID *rid) -> bool {
-  if(successful_) {
+  if (successful_) {
     return false;
   }
   int count = 0;
-  while(child_executor_->Next(tuple, rid)) {
-    if(table_heap_->MarkDelete(*rid, exec_ctx_->GetTransaction())) {
-    try {
-      if (!exec_ctx_->GetLockManager()->LockTable(exec_ctx_->GetTransaction(), LockManager::LockMode::INTENTION_EXCLUSIVE, table_info_->oid_)) {
-	throw ExecutionException("lock table intention exclusive failed");
+  while (child_executor_->Next(tuple, rid)) {
+    if (table_heap_->MarkDelete(*rid, exec_ctx_->GetTransaction())) {
+      /*
+      try {
+        if (!exec_ctx_->GetLockManager()->LockTable(exec_ctx_->GetTransaction(),
+                                                    LockManager::LockMode::INTENTION_EXCLUSIVE, table_info_->oid_)) {
+          throw ExecutionException("lock table intention exclusive failed");
+        }
+      } catch (TransactionAbortException &e) {
+        throw ExecutionException("delete TansactionAbort");
       }
-    } catch (TransactionAbortException &e) {
-      throw ExecutionException("delete TansactionAbort");
-    }
-    auto indexes = exec_ctx_->GetCatalog()->GetTableIndexes(table_name_);
-    for(auto index : indexes) {
-      auto key = (*tuple).KeyFromTuple(table_info_->schema_, index->key_schema_, index->index_->GetKeyAttrs());
-      index->index_->DeleteEntry(key, *rid, exec_ctx_->GetTransaction());
-    }
-    count++;
+      */
+      auto indexes = exec_ctx_->GetCatalog()->GetTableIndexes(table_name_);
+      for (auto index : indexes) {
+        auto key = (*tuple).KeyFromTuple(table_info_->schema_, index->key_schema_, index->index_->GetKeyAttrs());
+        index->index_->DeleteEntry(key, *rid, exec_ctx_->GetTransaction());
+      }
+      count++;
     }
   }
   std::vector<Value> value;

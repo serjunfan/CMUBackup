@@ -86,7 +86,7 @@ auto BPLUSTREE_TYPE::GetLeafPage(const KeyType &key, Operation op, Transaction *
     if (tree_page->IsLeafPage()) {
       if (first_pass && !IsPageSafe(tree_page, op)) {
         ReleaseWLatches(transaction);
-	//return nullptr;
+        // return nullptr;
         return GetLeafPage(key, op, transaction, false);
       }
       return page;

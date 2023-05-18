@@ -18,13 +18,17 @@ namespace bustub {
 
 AggregationExecutor::AggregationExecutor(ExecutorContext *exec_ctx, const AggregationPlanNode *plan,
                                          std::unique_ptr<AbstractExecutor> &&child)
-    : AbstractExecutor(exec_ctx), plan_(plan), child_(std::move(child)), aht_(plan_->GetAggregates(), plan_->GetAggregateTypes()), aht_iterator_(aht_.Begin()) {}
+    : AbstractExecutor(exec_ctx),
+      plan_(plan),
+      child_(std::move(child)),
+      aht_(plan_->GetAggregates(), plan_->GetAggregateTypes()),
+      aht_iterator_(aht_.Begin()) {}
 
 void AggregationExecutor::Init() {
   child_->Init();
   Tuple tuple;
   RID rid;
-  while(child_->Next(&tuple, &rid)) {
+  while (child_->Next(&tuple, &rid)) {
     auto aggregate_key = MakeAggregateKey(&tuple);
     auto aggregate_value = MakeAggregateValue(&tuple);
     aht_.InsertCombine(aggregate_key, aggregate_value);
@@ -34,9 +38,9 @@ void AggregationExecutor::Init() {
 
 auto AggregationExecutor::Next(Tuple *tuple, RID *rid) -> bool {
   Schema schema(plan_->OutputSchema());
-  if(aht_iterator_ != aht_.End()) {
+  if (aht_iterator_ != aht_.End()) {
     std::vector<Value> value(aht_iterator_.Key().group_bys_);
-    for(const auto &aggregate : aht_iterator_.Val().aggregates_) {
+    for (const auto &aggregate : aht_iterator_.Val().aggregates_) {
       value.push_back(aggregate);
     }
     *tuple = {value, &schema};
@@ -44,26 +48,26 @@ auto AggregationExecutor::Next(Tuple *tuple, RID *rid) -> bool {
     successful_ = true;
     return true;
   }
-  if(!successful_) {
+  if (!successful_) {
     successful_ = true;
-    if(plan_->group_bys_.empty()) {
-    std::vector<Value> value;
-    for(auto aggregate: plan_->agg_types_) {
-      switch(aggregate) {
-	case AggregationType::CountStarAggregate:
-	  value.push_back(ValueFactory::GetIntegerValue(0));
-	  break;
-	case AggregationType::CountAggregate:
-	case AggregationType::SumAggregate:
-	case AggregationType::MinAggregate:
-	case AggregationType::MaxAggregate:
-	  value.push_back(ValueFactory::GetNullValueByType(TypeId::INTEGER));
-	  break;
+    if (plan_->group_bys_.empty()) {
+      std::vector<Value> value;
+      for (auto aggregate : plan_->agg_types_) {
+        switch (aggregate) {
+          case AggregationType::CountStarAggregate:
+            value.push_back(ValueFactory::GetIntegerValue(0));
+            break;
+          case AggregationType::CountAggregate:
+          case AggregationType::SumAggregate:
+          case AggregationType::MinAggregate:
+          case AggregationType::MaxAggregate:
+            value.push_back(ValueFactory::GetNullValueByType(TypeId::INTEGER));
+            break;
+        }
       }
-    }
-    *tuple = {value, &schema};
-    successful_ = true;
-    return true;
+      *tuple = {value, &schema};
+      successful_ = true;
+      return true;
     }
   }
   return false;
