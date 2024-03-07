@@ -368,7 +368,7 @@ void BPLUSTREE_TYPE::HandleUnderflow(BPlusTreePage *page, Transaction *transacti
   page_id_t right_sibling_id;
   GetSiblings(page, left_sibling_id, right_sibling_id);
   if (left_sibling_id == INVALID_PAGE_ID && right_sibling_id == INVALID_PAGE_ID) {
-    throw std::logic_error("Non root page suppose to have sibling");
+    throw std::logic_error("Non root page suppose to have at least sibling");
   }
   BPlusTreePage *left_sibling_page = nullptr;
   BPlusTreePage *right_sibling_page = nullptr;
@@ -453,6 +453,7 @@ auto BPLUSTREE_TYPE::TryBorrow(BPlusTreePage *page, BPlusTreePage *sibling_page,
   }
 
   int sibling_borrow_at = sibling_at_left ? sibling_page->GetSize() - 1 : (page->IsLeafPage() ? 0 : 1);
+  //parent_update_at refers to the key index in parent page.
   int parent_update_at = parent_page->FindValue(page->GetPageId()) + (sibling_at_left ? 0 : 1);
 
   // LOG_DEBUG("sibling_page_id = %d\n", sibling_page->GetPageId());

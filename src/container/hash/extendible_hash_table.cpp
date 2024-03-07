@@ -102,6 +102,7 @@ void ExtendibleHashTable<K, V>::Insert(const K &key, const V &value) {
     if (local_depth == global_depth_) {
       size_t dir_size = dir_.size();
       dir_.reserve(2 * dir_size);
+      // redistribute the global index buckets.
       std::copy_n(dir_.begin(), dir_size, std::back_inserter(dir_));
       ++global_depth_;
     }
@@ -109,6 +110,7 @@ void ExtendibleHashTable<K, V>::Insert(const K &key, const V &value) {
     auto b1 = std::make_shared<Bucket>(bucket_size_, local_depth + 1);
     ++num_buckets_;
     int local_mask = 1 << local_depth;
+    // redistribute the old size local bucket
     for (const auto &[k, v] : dir_[index]->GetItems()) {
       size_t item_hash = std::hash<K>()(k);
       if (static_cast<bool>(item_hash & local_mask)) {
@@ -117,7 +119,7 @@ void ExtendibleHashTable<K, V>::Insert(const K &key, const V &value) {
         b0->Insert(k, v);
       }
     }
-
+    // mapped the new buckets
     for (size_t i = (std::hash<K>()(key) & (local_mask - 1)); i < dir_.size(); i += local_mask) {
       if (static_cast<bool>(i & local_mask)) {
         dir_[i] = b1;

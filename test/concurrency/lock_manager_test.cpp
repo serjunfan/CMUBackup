@@ -7,10 +7,10 @@
 #include <random>
 #include <thread>  // NOLINT
 
+#include <iostream>
 #include "common/config.h"
 #include "concurrency/transaction_manager.h"
 #include "gtest/gtest.h"
-#include <iostream>
 
 namespace bustub {
 

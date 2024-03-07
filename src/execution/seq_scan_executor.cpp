@@ -25,7 +25,6 @@ void SeqScanExecutor::Init() {
   table_heap_ = table_info->table_.get();
   iter_ = std::make_unique<TableIterator>(table_heap_->Begin(exec_ctx_->GetTransaction()));
 
-  /*
   try {
     if (exec_ctx->GetTransaction()->GetIsolationLevel() != IsolationLevel::READ_UNCOMMITTED &&
         !exec_ctx->GetLockManager()->LockTable(exec_ctx->GetTransaction(), LockManager::LockMode::INTENTION_SHARED,
@@ -35,29 +34,28 @@ void SeqScanExecutor::Init() {
   } catch (TransactionAbortException &e) {
     throw ExecutionException("seq scan TransactionAbort");
   }
-  */
 }
 
 auto SeqScanExecutor::Next(Tuple *tuple, RID *rid) -> bool {
-  /*
   try {
     if (!exec_ctx_->GetTransaction()->GetSharedRowLockSet()->empty()) {
       if (exec_ctx_->GetTransaction()->GetIsolationLevel() == IsolationLevel::READ_COMMITTED &&
-!exec_ctx_->GetLockManager()->UnlockRow(exec_ctx_->GetTransaction(),
-exec_ctx_->GetCatalog()->GetTable(plan_->GetTableOid())->oid_, *rid)) { throw ExecutionException("unlock row share
-failed");
+          !exec_ctx_->GetLockManager()->UnlockRow(
+              exec_ctx_->GetTransaction(), exec_ctx_->GetCatalog()->GetTable(plan_->GetTableOid())->oid_, *rid)) {
+        throw ExecutionException("unlock row share failed");
       }
     }
   } catch (TransactionAbortException &e) {
     throw ExecutionException("seq scan TransactionAbort");
   }
 
-  if(*iter_ != table_heap_->End()) {
+  if (*iter_ != table_heap_->End()) {
     try {
-      if(exec_ctx_->GetTransaction()->GetIsolationLevel() != IsolationLevel::READ_UNCOMMITTED &&
-!exec_ctx_->GetLockManager()->LockRow(exec_ctx_->GetTransaction(), LockManager::LockMode::SHARED,
-exec_ctx_->GetCatalog()->GetTable(plan_->GetTableOid())->oid_, (*(*iter_)).GetRid())) { throw ExecutionException("lock
-row intention shared failed");
+      if (exec_ctx_->GetTransaction()->GetIsolationLevel() != IsolationLevel::READ_UNCOMMITTED &&
+          !exec_ctx_->GetLockManager()->LockRow(exec_ctx_->GetTransaction(), LockManager::LockMode::SHARED,
+                                                exec_ctx_->GetCatalog()->GetTable(plan_->GetTableOid())->oid_,
+                                                (*(*iter_)).GetRid())) {
+        throw ExecutionException("lock row intention shared failed");
       }
     } catch (TransactionAbortException &e) {
       throw ExecutionException("seq scan TransactionAbort");
@@ -68,7 +66,8 @@ row intention shared failed");
   }
   return false;
 }
-*/
+
+/*
   while ((*iter_) != table_heap_->End() && !((*iter_)->IsAllocated())) {
     (*iter_)++;
   }
@@ -79,4 +78,5 @@ row intention shared failed");
   *rid = tuple->GetRid();
   return true;
 }
+*/
 }  // namespace bustub

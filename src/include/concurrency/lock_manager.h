@@ -65,10 +65,10 @@ class LockManager {
    public:
     LockRequestQueue() = default;
     ~LockRequestQueue() {
-      for(auto iter = request_queue_.begin(); iter != request_queue_.end();) {
-	auto i = *iter;
-	request_queue_.erase(iter++);
-	delete i;
+      for (auto iter = request_queue_.begin(); iter != request_queue_.end();) {
+        auto i = *iter;
+        request_queue_.erase(iter++);
+        delete i;
       }
     }
     /** List of lock requests for the same resource (table or row) */
